@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COP Monitor - Balingen-Roßwangen</title>
-    <!-- Tailwind CSS for modern responsive styling -->
+    <title>COP & Heizkosten-Vergleich - Balingen-Roßwangen</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,13 +22,15 @@
             }
         }
     </script>
-    <!-- FontAwesome for icons -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js and Annotation Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
-        /* Custom styled range slider */
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
@@ -71,25 +73,24 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col items-center">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center">
 
-    <div class="max-w-3xl w-full space-y-6">
+    <div class="max-w-4xl w-full space-y-6">
         
         <!-- Header Section -->
-        <header class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <header class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
             <div class="absolute -right-10 -top-10 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400 flex items-center gap-3">
-                        <i class="fa-solid fa-temperature-arrow-up text-sky-400"></i>
-                        Split-Klima COP Monitor
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-emerald-400 to-amber-400 flex items-center gap-3">
+                        <i class="fa-solid fa-calculator text-sky-400"></i>
+                        Heizkosten & COP Vergleicher
                     </h1>
                     <p class="text-sm text-slate-400 mt-1 flex items-center gap-2">
                         <i class="fa-solid fa-location-dot text-rose-400"></i>
                         Standort: 72336 Balingen-Roßwangen <span class="text-xs text-slate-500">(48.2423° N, 8.7909° E)</span>
                     </p>
                 </div>
-                <!-- Status Badge -->
                 <div id="api-status-badge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                     <span id="api-status-text">Wetterdaten werden geladen...</span>
@@ -99,154 +100,171 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <!-- Weather Data & Controls -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+            <!-- Weather Data & Controls Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-800">
-                    <h2 class="font-bold text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-cloud-sun text-amber-400"></i> Umgebungsbedingungen
+                    <h2 class="font-bold text-slate-200 flex items-center gap-2 text-sm md:text-base">
+                        <i class="fa-solid fa-cloud-sun text-amber-400"></i> Live-Wetter Balingen-Roßwangen
                     </h2>
                     <button onclick="fetchWeatherData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5 active:scale-95">
-                        <i class="fa-solid fa-rotate text-xs"></i> API Aktualisieren
+                        <i class="fa-solid fa-rotate text-xs"></i> API Abfragen
                     </button>
                 </div>
 
-                <!-- API Alert Banner (Hidden by default) -->
+                <!-- API Alert Banner -->
                 <div id="api-alert" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300 flex items-start gap-2.5">
                     <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 text-sm"></i>
                     <div>
                         <strong>API-Abruf eingeschränkt!</strong>
-                        <p class="text-amber-400/80 mt-0.5">Automatische Wetterabfrage blockiert (z.B. durch file:// Protokoll). Die Werte können über die Schieberegler unten manuell eingestellt werden.</p>
+                        <p class="text-amber-400/80 mt-0.5">Automatische Abfrage blockiert. Du kannst Temperatur und Feuchte manuell per Regler einstellen.</p>
                     </div>
                 </div>
 
                 <!-- Temperature Input -->
-                <div class="space-y-2">
-                    <div class="flex justify-between text-sm">
-                        <label for="temp-slider" class="text-slate-400">Außentemperatur:</label>
-                        <span class="font-bold text-sky-400 text-base" id="temp-val-display">7.0 °C</span>
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs">
+                        <label for="temp-slider" class="text-slate-400">Aktuelle Außentemperatur:</label>
+                        <span class="font-bold text-sky-400 text-sm" id="temp-val-display">7.0 °C</span>
                     </div>
                     <input type="range" id="temp-slider" min="-20" max="20" step="0.5" value="7.0" oninput="onManualInput()" class="w-full">
                     <div class="flex justify-between text-[10px] text-slate-500 font-mono">
-                        <span>-20°C (Extremfrost)</span>
+                        <span>-20°C (Frost)</span>
                         <span>0°C</span>
                         <span>+20°C (Mild)</span>
                     </div>
                 </div>
 
                 <!-- Humidity Input -->
-                <div class="space-y-2 pt-2">
-                    <div class="flex justify-between text-sm">
+                <div class="space-y-1.5 pt-1">
+                    <div class="flex justify-between text-xs">
                         <label for="humidity-slider" class="text-slate-400">Relative Luftfeuchtigkeit:</label>
-                        <span class="font-bold text-sky-400 text-base" id="humidity-val-display">80 %</span>
+                        <span class="font-bold text-sky-400 text-sm" id="humidity-val-display">80 %</span>
                     </div>
                     <input type="range" id="humidity-slider" min="20" max="100" step="1" value="80" oninput="onManualInput()" class="w-full">
-                    <div class="flex justify-between text-[10px] text-slate-500 font-mono">
-                        <span>20% (Trocken)</span>
-                        <span>80% (Feucht)</span>
-                        <span>100% (Nebel)</span>
-                    </div>
                 </div>
 
-                <!-- Operating Condition / Defrost Status -->
-                <div class="pt-2">
-                    <div class="text-xs text-slate-400 mb-1.5">Betriebszustand / Vereisungsrisiko:</div>
-                    <div id="defrost-status" class="p-3 rounded-xl border flex items-center gap-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
-                        <i class="fa-solid fa-circle-check text-lg"></i>
-                        <div>
-                            <div class="font-bold text-sm">Optimaler Verdampferbetrieb</div>
-                            <div class="text-[11px] text-emerald-400/80">Keine erhöhte Abtauneigung zu erwarten.</div>
-                        </div>
+                <!-- Defrost Status -->
+                <div id="defrost-status" class="p-2.5 rounded-xl border flex items-center gap-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+                    <i class="fa-solid fa-circle-check text-base"></i>
+                    <div>
+                        <div class="font-bold text-xs">Optimaler Verdampferbetrieb</div>
+                        <div class="text-[10px] text-emerald-400/80">Keine erhöhte Abtauneigung bei dieser Temperatur/Feuchte.</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Model Selection & Calculator Input -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5 flex flex-col justify-between">
-                <div>
-                    <div class="pb-3 border-b border-slate-800 mb-4">
-                        <h2 class="font-bold text-slate-200 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders text-emerald-400"></i> Klimagerät & Leistung
-                        </h2>
-                    </div>
+            <!-- Fuel Price Inputs Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="pb-3 border-b border-slate-800">
+                    <h2 class="font-bold text-slate-200 flex items-center gap-2 text-sm md:text-base">
+                        <i class="fa-solid fa-euro-sign text-emerald-400"></i> Energiepreise & Effizienz
+                    </h2>
+                </div>
 
-                    <!-- Model Dropdown -->
-                    <div class="space-y-1.5 mb-4">
-                        <label for="model-select" class="text-xs text-slate-400">Wähle deine Geräteklasse:</label>
-                        <select id="model-select" onchange="calculateCOP()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-sky-500 transition">
-                            <option value="standard_a">Standard Inverter (SCOP ~4.0 - 4.2) [A+]</option>
-                            <option value="premium_a_plus" selected>Premium Inverter (SCOP ~4.6) [A++]</option>
-                            <option value="panasonic_vz9">Panasonic Heatcharge VZ9 (SCOP 6.2) [High-End]</option>
-                        </select>
-                    </div>
+                <!-- Model Dropdown -->
+                <div class="space-y-1">
+                    <label for="model-select" class="text-xs text-slate-400">Klimageräte-Klasse:</label>
+                    <select id="model-select" onchange="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-sky-500 transition">
+                        <option value="standard_a">Standard Inverter (SCOP ~4.0) [A+]</option>
+                        <option value="premium_a_plus" selected>Premium Inverter (SCOP ~4.6) [A++]</option>
+                        <option value="panasonic_vz9">Panasonic Heatcharge VZ9 (SCOP 6.2) [High-End]</option>
+                    </select>
+                </div>
 
-                    <!-- Heat Power Input -->
-                    <div class="space-y-1.5">
-                        <label for="heat-power-input" class="text-xs text-slate-400">Gewünschte Heizleistung (Watt):</label>
-                        <div class="relative">
-                            <input type="number" id="heat-power-input" value="2000" min="500" max="7000" step="100" oninput="calculateCOP()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-sky-500 font-mono">
-                            <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-semibold">W</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500">z.B. 2000 W = Erforderliche Wärmeleistung für einen ~25 m² Raum.</p>
+                <!-- Fuel Price Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <!-- Electricity -->
+                    <div class="space-y-1">
+                        <label for="price-electricity" class="text-[11px] text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-sky-400"></i> Strom (€/kWh):
+                        </label>
+                        <input type="number" id="price-electricity" value="0.32" step="0.01" min="0.10" max="0.90" oninput="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:border-sky-500">
+                    </div>
+                    <!-- Pellets -->
+                    <div class="space-y-1">
+                        <label for="price-pellets" class="text-[11px] text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-cubes text-amber-500"></i> Pellets (€/t):
+                        </label>
+                        <input type="number" id="price-pellets" value="290" step="5" min="100" max="800" oninput="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:border-amber-500">
+                    </div>
+                    <!-- Wood -->
+                    <div class="space-y-1">
+                        <label for="price-wood" class="text-[11px] text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-tree text-emerald-500"></i> Fichte (€/SRM):
+                        </label>
+                        <input type="number" id="price-wood" value="95" step="5" min="30" max="300" oninput="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-500">
                     </div>
                 </div>
 
-                <!-- Mathematical Formula Footer -->
-                <div class="p-3 bg-slate-950/80 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 flex items-center justify-between font-mono">
-                    <span>Formel:</span>
-                    <span class="text-sky-400 font-semibold">COP = Q<sub>Heiz</sub> / P<sub>elektrisch</sub></span>
+                <!-- Efficiencies Info Footnote -->
+                <div class="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-[10px] text-slate-400 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Pellets: ~4,9 kWh/kg (Nutzungsgrad 75%)</span>
+                        <span class="text-amber-400 font-mono" id="pellet-kwh-price-display">-- ct/kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Fichte trocken: ~1.300 kWh/SRM (Nutzungsgrad 75%)</span>
+                        <span class="text-emerald-400 font-mono" id="wood-kwh-price-display">-- ct/kWh</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Dashboard Card -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                
-                <!-- Main COP Result -->
-                <div class="md:col-span-1 p-5 bg-slate-950 border border-slate-800 rounded-xl flex flex-col justify-center items-center relative">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Berechneter COP</span>
-                    <div id="cop-value-display" class="text-5xl font-black text-emerald-400 my-1 font-mono tracking-tight">
-                        4.52
+        <!-- Live Recommendation Banner -->
+        <div id="recommendation-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="rec-icon-box" class="w-12 h-12 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 text-2xl shrink-0">
+                        <i class="fa-solid fa-fan"></i>
                     </div>
-                    <span id="cop-efficiency-tag" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Sehr Effizient
-                    </span>
-                </div>
-
-                <!-- Electrical Power Draw -->
-                <div class="p-5 bg-slate-950 border border-slate-800 rounded-xl flex flex-col justify-center items-center">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">El. Stromaufnahme</span>
-                    <div id="power-draw-display" class="text-4xl font-extrabold text-sky-400 my-1 font-mono">
-                        442 W
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Aktuelle Empfehlung bei <span id="rec-temp-display" class="text-slate-200">7.0 °C</span></span>
+                        <h3 id="rec-title" class="text-lg md:text-xl font-extrabold text-emerald-400">
+                            Split-Klimaanlage heizt am günstigsten!
+                        </h3>
+                        <p id="rec-subtitle" class="text-xs text-slate-400 mt-0.5">
+                            Kosten pro kWh Wärme: Klimaanlage <b>7.1 ct</b> vs. Pellets <b>7.9 ct</b> vs. Holz <b>9.7 ct</b>
+                        </p>
                     </div>
-                    <span class="text-xs text-slate-500">Elektrische Netzleistung</span>
                 </div>
-
-                <!-- Heating Output & Factor -->
-                <div class="p-5 bg-slate-950 border border-slate-800 rounded-xl flex flex-col justify-center items-center">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Wärmegewinnfaktor</span>
-                    <div id="heat-factor-display" class="text-4xl font-extrabold text-amber-400 my-1 font-mono">
-                        452%
-                    </div>
-                    <span class="text-xs text-slate-500" id="factor-desc-display">4,52 kWh Wärme pro 1 kWh Strom</span>
+                <div class="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-center shrink-0 w-full md:w-auto">
+                    <span class="text-[10px] text-slate-400 block uppercase font-semibold">Aktueller COP</span>
+                    <span id="live-cop-display" class="text-2xl font-black text-sky-400 font-mono">4.52</span>
                 </div>
+            </div>
+        </div>
 
+        <!-- Chart Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div>
+                    <h2 class="font-bold text-slate-200 flex items-center gap-2 text-sm md:text-base">
+                        <i class="fa-solid fa-chart-line text-sky-400"></i> Wärmekostenvergleich über die Außentemperatur
+                    </h2>
+                    <p class="text-xs text-slate-400">Kosten in Cent pro Kilowattstunde abgegebener Nutzwärme (Cent/kWh Wärme)</p>
+                </div>
+                <div id="bivalenz-point-badge" class="px-3 py-1 rounded-lg text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 self-start sm:self-auto">
+                    Schnittpunkt: --
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full h-72 md:h-80">
+                <canvas id="costChart"></canvas>
             </div>
         </div>
 
     </div>
 
     <script>
-        // Location Coordinates for Balingen-Roßwangen
         const LAT = 48.2423;
         const LON = 8.7909;
 
-        // Global State Variables
         let currentTemp = 7.0;
         let currentHumidity = 80;
         let isManualMode = false;
+        let costChart = null;
 
-        // Fetch Weather Data with robust Timeout and Error Handling
         async function fetchWeatherData() {
             const statusBadge = document.getElementById('api-status-badge');
             const statusText = document.getElementById('api-status-text');
@@ -255,7 +273,6 @@
             statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-2";
             statusText.innerText = "Lade Wetterdaten...";
 
-            // Create an AbortController to limit fetch timeout to 3 seconds
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
 
@@ -265,7 +282,7 @@
                 });
                 clearTimeout(timeoutId);
 
-                if (!response.ok) throw new Error("API-Antwort nicht OK");
+                if (!response.ok) throw new Error("API-Antwort fehlerhaft");
 
                 const data = await response.json();
 
@@ -273,37 +290,32 @@
                     currentTemp = parseFloat(data.current.temperature_2m);
                     currentHumidity = parseInt(data.current.relative_humidity_2m);
 
-                    // Update UI Controls
                     document.getElementById('temp-slider').value = currentTemp;
                     document.getElementById('humidity-slider').value = currentHumidity;
                     document.getElementById('temp-val-display').innerText = `${currentTemp.toFixed(1)} °C`;
                     document.getElementById('humidity-val-display').innerText = `${currentHumidity} %`;
 
-                    // Update Status Badge
                     statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-2";
-                    statusText.innerText = "Live API verbunden";
+                    statusText.innerText = "Live API Balingen";
                     alertBox.classList.add('hidden');
                     isManualMode = false;
 
-                    calculateCOP();
+                    updateAll();
                 } else {
-                    throw new Error("Ungültiges Datenformat");
+                    throw new Error("Ungültiges Schema");
                 }
             } catch (error) {
-                console.warn("Wetter-API konnte nicht geladen werden:", error);
+                console.warn("Wetter-API abgelehnt:", error);
                 
-                // Switch seamlessly to manual fallback mode
                 isManualMode = true;
                 statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-2";
                 statusText.innerText = "Manueller Modus";
                 alertBox.classList.remove('hidden');
 
-                // Initial calculation using current values
-                calculateCOP();
+                updateAll();
             }
         }
 
-        // Triggered when user moves sliders manually
         function onManualInput() {
             currentTemp = parseFloat(document.getElementById('temp-slider').value);
             currentHumidity = parseInt(document.getElementById('humidity-slider').value);
@@ -315,99 +327,269 @@
                 const statusBadge = document.getElementById('api-status-badge');
                 const statusText = document.getElementById('api-status-text');
                 statusBadge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-2";
-                statusText.innerText = "Manuell angepasst";
+                statusText.innerText = "Manuell";
             }
 
-            calculateCOP();
+            updateAll();
         }
 
-        // Core COP & Efficiency Logic
-        function calculateCOP() {
-            const model = document.getElementById('model-select').value;
-            const heatPowerInput = parseFloat(document.getElementById('heat-power-input').value) || 2000;
-            const defrostStatusEl = document.getElementById('defrost-status');
-
+        function calculateCOPAtTemp(temp, humidity, model) {
             let baseCOP = 1.0;
 
-            // 1. Calculate Base COP according to Outdoor Temperature based on polynomial curve fitting
             if (model === 'standard_a') {
-                // Standard A+ Model
-                baseCOP = 0.0008 * Math.pow(currentTemp, 2) + 0.095 * currentTemp + 3.1;
+                baseCOP = 0.0008 * Math.pow(temp, 2) + 0.095 * temp + 3.1;
             } else if (model === 'premium_a_plus') {
-                // Premium A++ / A+++ Model
-                baseCOP = 0.001 * Math.pow(currentTemp, 2) + 0.12 * currentTemp + 3.6;
+                baseCOP = 0.001 * Math.pow(temp, 2) + 0.12 * temp + 3.6;
             } else if (model === 'panasonic_vz9') {
-                // High-End Panasonic Heatcharge VZ9 (SCOP 6.2)
-                baseCOP = 0.0015 * Math.pow(currentTemp, 2) + 0.18 * currentTemp + 5.0;
+                baseCOP = 0.0015 * Math.pow(temp, 2) + 0.18 * temp + 5.0;
             }
 
-            // 2. Check for Defrost / Icing Conditions (-2°C <= Temp <= +5°C & Humidity >= 80%)
-            const isDefrostRisk = (currentTemp >= -2 && currentTemp <= 5 && currentHumidity >= 80);
-            let defrostPenalty = 1.0;
+            const isDefrostRisk = (temp >= -2 && temp <= 5 && humidity >= 80);
+            const defrostPenalty = isDefrostRisk ? 0.85 : 1.0;
 
-            if (isDefrostRisk) {
-                // ~15% penalty due to defrosting cycles and ice formation
-                defrostPenalty = 0.85;
-
-                defrostStatusEl.className = "p-3 rounded-xl border flex items-center gap-3 bg-amber-500/10 border-amber-500/30 text-amber-400";
-                defrostStatusEl.innerHTML = `
-                    <i class="fa-solid fa-snowflake text-lg animate-pulse"></i>
-                    <div>
-                        <div class="font-bold text-sm">Abtaugefahr / Reifbildung</div>
-                        <div class="text-[11px] text-amber-400/80">Hohe Luftfeuchte bei Gefrierpunkt (-15% Effizienz).</div>
-                    </div>
-                `;
-            } else {
-                defrostStatusEl.className = "p-3 rounded-xl border flex items-center gap-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
-                defrostStatusEl.innerHTML = `
-                    <i class="fa-solid fa-circle-check text-lg"></i>
-                    <div>
-                        <div class="font-bold text-sm">Optimaler Verdampferbetrieb</div>
-                        <div class="text-[11px] text-emerald-400/80">Keine erhöhte Abtauneigung zu erwarten.</div>
-                    </div>
-                `;
-            }
-
-            // Final calculated COP
             let finalCOP = baseCOP * defrostPenalty;
-
-            // Physical floor limit (Direct resistive heat COP = 1.0)
             if (finalCOP < 1.0) finalCOP = 1.0;
 
-            // Calculate required electrical power input (P_el = Q_heat / COP)
-            const powerDrawWatts = Math.round(heatPowerInput / finalCOP);
-            const efficiencyPercentage = Math.round(finalCOP * 100);
+            return finalCOP;
+        }
 
-            // Update UI elements
-            const copDisplay = document.getElementById('cop-value-display');
-            const efficiencyTag = document.getElementById('cop-efficiency-tag');
+        function updateAll() {
+            const model = document.getElementById('model-select').value;
+            const priceElec = parseFloat(document.getElementById('price-electricity').value) || 0.32;
+            const pricePelletsTon = parseFloat(document.getElementById('price-pellets').value) || 290;
+            const priceWoodSRM = parseFloat(document.getElementById('price-wood').value) || 95;
 
-            copDisplay.innerText = finalCOP.toFixed(2);
-            document.getElementById('power-draw-display').innerText = `${powerDrawWatts} W`;
-            document.getElementById('heat-factor-display').innerText = `${efficiencyPercentage}%`;
-            document.getElementById('factor-desc-display').innerText = `${finalCOP.toFixed(2)} kWh Wärme pro 1 kWh Strom`;
+            // Pellets Efficiency 75% (4900 kWh/t * 0.75 = 3675 kWh useful heat)
+            const pelletCentPerKwh = (pricePelletsTon * 100) / (4900 * 0.75);
+            
+            // Spruce Wood: 1300 kWh/SRM, 75% efficiency -> ~975 kWh useful heat per SRM
+            const woodCentPerKwh = (priceWoodSRM * 100) / (1300 * 0.75);
 
-            // Colorize COP output based on efficiency level
-            if (finalCOP >= 4.5) {
-                copDisplay.className = "text-5xl font-black text-emerald-400 my-1 font-mono tracking-tight";
-                efficiencyTag.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                efficiencyTag.innerText = "Hervorragend";
-            } else if (finalCOP >= 3.0) {
-                copDisplay.className = "text-5xl font-black text-sky-400 my-1 font-mono tracking-tight";
-                efficiencyTag.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20";
-                efficiencyTag.innerText = "Gut / Effizient";
-            } else if (finalCOP >= 2.0) {
-                copDisplay.className = "text-5xl font-black text-amber-400 my-1 font-mono tracking-tight";
-                efficiencyTag.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                efficiencyTag.innerText = "Mäßig (Frostbereich)";
+            document.getElementById('pellet-kwh-price-display').innerText = `${pelletCentPerKwh.toFixed(1)} ct/kWh`;
+            document.getElementById('wood-kwh-price-display').innerText = `${woodCentPerKwh.toFixed(1)} ct/kWh`;
+
+            // Current COP
+            const liveCOP = calculateCOPAtTemp(currentTemp, currentHumidity, model);
+            const heatPumpCentPerKwh = (priceElec * 100) / liveCOP;
+
+            document.getElementById('live-cop-display').innerText = liveCOP.toFixed(2);
+            document.getElementById('rec-temp-display').innerText = `${currentTemp.toFixed(1)} °C`;
+
+            const defrostStatusEl = document.getElementById('defrost-status');
+            const isDefrost = (currentTemp >= -2 && currentTemp <= 5 && currentHumidity >= 80);
+            if (isDefrost) {
+                defrostStatusEl.className = "p-2.5 rounded-xl border flex items-center gap-3 bg-amber-500/10 border-amber-500/30 text-amber-400";
+                defrostStatusEl.innerHTML = `
+                    <i class="fa-solid fa-snowflake text-base animate-pulse"></i>
+                    <div>
+                        <div class="font-bold text-xs">Abtaugefahr / Reifbildung (-15% COP)</div>
+                        <div class="text-[10px] text-amber-400/80">Erhöhte Luftfeuchte bei Temp um 0°C.</div>
+                    </div>
+                `;
             } else {
-                copDisplay.className = "text-5xl font-black text-rose-400 my-1 font-mono tracking-tight";
-                efficiencyTag.className = "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
-                efficiencyTag.innerText = "Niedrig (Starkfrost)";
+                defrostStatusEl.className = "p-2.5 rounded-xl border flex items-center gap-3 bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+                defrostStatusEl.innerHTML = `
+                    <i class="fa-solid fa-circle-check text-base"></i>
+                    <div>
+                        <div class="font-bold text-xs">Optimaler Verdampferbetrieb</div>
+                        <div class="text-[10px] text-emerald-400/80">Keine erhöhte Abtauneigung zu erwarten.</div>
+                    </div>
+                `;
+            }
+
+            const recTitle = document.getElementById('rec-title');
+            const recSubtitle = document.getElementById('rec-subtitle');
+            const recIconBox = document.getElementById('rec-icon-box');
+
+            recSubtitle.innerHTML = `Nutzwärmekosten: Klimaanlage <b>${heatPumpCentPerKwh.toFixed(1)} ct/kWh</b> | Pellets <b>${pelletCentPerKwh.toFixed(1)} ct/kWh</b> | Fichte <b>${woodCentPerKwh.toFixed(1)} ct/kWh</b>`;
+
+            if (heatPumpCentPerKwh <= pelletCentPerKwh && heatPumpCentPerKwh <= woodCentPerKwh) {
+                recTitle.innerText = "Split-Klimaanlage ist aktuell der günstigste Wärmeerzeuger!";
+                recTitle.className = "text-lg md:text-xl font-extrabold text-emerald-400";
+                recIconBox.className = "w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0";
+                recIconBox.innerHTML = '<i class="fa-solid fa-fan"></i>';
+            } else if (pelletCentPerKwh <= heatPumpCentPerKwh && pelletCentPerKwh <= woodCentPerKwh) {
+                recTitle.innerText = "Pelletheizung ist aktuell günstiger als die Klimaanlage!";
+                recTitle.className = "text-lg md:text-xl font-extrabold text-amber-400";
+                recIconBox.className = "w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl shrink-0";
+                recIconBox.innerHTML = '<i class="fa-solid fa-cubes"></i>';
+            } else {
+                recTitle.innerText = "Holzofen (Fichte) heizt aktuell am preiswertesten!";
+                recTitle.className = "text-lg md:text-xl font-extrabold text-emerald-300";
+                recIconBox.className = "w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 text-2xl shrink-0";
+                recIconBox.innerHTML = '<i class="fa-solid fa-fire"></i>';
+            }
+
+            const temps = [-15, -12, -10, -7, -5, -2, 0, 2, 5, 7, 10, 12, 15];
+            const hpCosts = [];
+            const pelletCosts = temps.map(() => parseFloat(pelletCentPerKwh.toFixed(2)));
+            const woodCosts = temps.map(() => parseFloat(woodCentPerKwh.toFixed(2)));
+
+            let bivalenzTemp = null;
+
+            temps.forEach(t => {
+                const cop = calculateCOPAtTemp(t, currentHumidity, model);
+                const cost = (priceElec * 100) / cop;
+                hpCosts.push(parseFloat(cost.toFixed(2)));
+
+                const minCheaperFuel = Math.min(pelletCentPerKwh, woodCentPerKwh);
+                if (bivalenzTemp === null && cost <= minCheaperFuel) {
+                    bivalenzTemp = t;
+                }
+            });
+
+            const bivalenzBadge = document.getElementById('bivalenz-point-badge');
+            if (bivalenzTemp !== null) {
+                bivalenzBadge.innerText = `Klima günstiger ab t ≥ ${bivalenzTemp} °C`;
+                bivalenzBadge.className = "px-3 py-1 rounded-lg text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 self-start sm:self-auto";
+            } else {
+                bivalenzBadge.innerText = `Klima aktuell teurer in der Spanne`;
+                bivalenzBadge.className = "px-3 py-1 rounded-lg text-xs font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20 self-start sm:self-auto";
+            }
+
+            renderChart(temps, hpCosts, pelletCosts, woodCosts);
+        }
+
+        function renderChart(temps, hpCosts, pelletCosts, woodCosts) {
+            const ctx = document.getElementById('costChart').getContext('2d');
+            const labels = temps.map(t => `${t > 0 ? '+' : ''}${t} °C`);
+
+            // Find closest index in labels array or calculate interpolated position
+            let closestIndex = 0;
+            let minDiff = Math.abs(temps[0] - currentTemp);
+            for (let i = 1; i < temps.length; i++) {
+                let diff = Math.abs(temps[i] - currentTemp);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = i;
+                }
+            }
+
+            // Annotation configuration for vertical line and marker
+            const annotationsConfig = {
+                currentTempLine: {
+                    type: 'line',
+                    xMin: closestIndex,
+                    xMax: closestIndex,
+                    borderColor: '#f43f5e',
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    label: {
+                        display: true,
+                        content: `Aktuell: ${currentTemp.toFixed(1)} °C`,
+                        position: 'start',
+                        backgroundColor: 'rgba(244, 63, 94, 0.9)',
+                        color: '#ffffff',
+                        font: { size: 10, weight: 'bold' },
+                        padding: 4,
+                        borderRadius: 4
+                    }
+                }
+            };
+
+            if (costChart) {
+                costChart.data.labels = labels;
+                costChart.data.datasets[0].data = hpCosts;
+                costChart.data.datasets[1].data = pelletCosts;
+                costChart.data.datasets[2].data = woodCosts;
+                
+                // Highlight active point in dataset
+                costChart.data.datasets[0].pointRadius = hpCosts.map((_, i) => i === closestIndex ? 8 : 4);
+                costChart.data.datasets[0].pointBackgroundColor = hpCosts.map((_, i) => i === closestIndex ? '#f43f5e' : '#38bdf8');
+                
+                costChart.options.plugins.annotation.annotations = annotationsConfig;
+                costChart.update();
+            } else {
+                costChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Split-Klimaanlage (ct/kWh Wärme)',
+                                data: hpCosts,
+                                borderColor: '#38bdf8',
+                                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: false,
+                                pointRadius: hpCosts.map((_, i) => i === closestIndex ? 8 : 4),
+                                pointBackgroundColor: hpCosts.map((_, i) => i === closestIndex ? '#f43f5e' : '#38bdf8'),
+                                pointHoverRadius: 9
+                            },
+                            {
+                                label: 'Holzpellets (75% Wirkungsgrad)',
+                                data: pelletCosts,
+                                borderColor: '#f59e0b',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                tension: 0,
+                                fill: false,
+                                pointRadius: 0
+                            },
+                            {
+                                label: 'Brennholz Fichte (75% Wirkungsgrad)',
+                                data: woodCosts,
+                                borderColor: '#10b981',
+                                borderWidth: 2,
+                                borderDash: [3, 3],
+                                tension: 0,
+                                fill: false,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            annotation: {
+                                annotations: annotationsConfig
+                            },
+                            legend: {
+                                labels: {
+                                    color: '#94a3b8',
+                                    font: { size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#cbd5e1',
+                                borderColor: '#334155',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} ct/kWh`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: '#1e293b' },
+                                ticks: { color: '#94a3b8', font: { size: 10 } }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Cent pro kWh Wärme (ct/kWh)',
+                                    color: '#64748b',
+                                    font: { size: 11 }
+                                },
+                                grid: { color: '#1e293b' },
+                                ticks: { color: '#94a3b8', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
             }
         }
 
-        // Initialize application on window load
         window.onload = function() {
             fetchWeatherData();
         };
