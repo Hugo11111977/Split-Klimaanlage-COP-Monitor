@@ -90,7 +90,7 @@
                     <div class="mt-2 flex items-center gap-2">
                         <i class="fa-solid fa-location-dot text-rose-400"></i>
                         <span class="text-xs text-slate-400">Standort:</span>
-                        <select id="location-select" onchange="onLocationChange()" class="bg-slate-950 border border-slate-700 text-sky-400 font-bold rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-sky-500 transition">
+                        <select id="location-select" onchange="onLocationChange()" class="bg-slate-950 border border-slate-700 text-sky-400 font-bold rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-sky-500 transition cursor-pointer">
                             <option value="rosswangen" selected>72336 Balingen-Roßwangen (48.2423° N, 8.7909° E)</option>
                             <option value="geislingen">72351 Geislingen (48.2861° N, 8.8122° E)</option>
                         </select>
@@ -158,7 +158,6 @@
                 </div>
             </div>
 
-            <!-- Fuel Price & Efficiency Inputs Card -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
                 <div class="pb-3 border-b border-slate-800">
                     <h2 class="font-bold text-slate-200 flex items-center gap-2 text-sm md:text-base">
@@ -169,22 +168,52 @@
                 <!-- Model Dropdown -->
                 <div class="space-y-1">
                     <label for="model-select" class="text-xs text-slate-400">Klimageräte-Klasse:</label>
-                    <select id="model-select" onchange="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-sky-500 transition">
+                    <select id="model-select" onchange="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-sky-500 transition cursor-pointer">
                         <option value="standard_a">Standard Inverter (SCOP ~4.0) [A+]</option>
                         <option value="premium_a_plus" selected>Premium Inverter (SCOP ~4.6) [A++]</option>
                         <option value="panasonic_vz9">Panasonic Heatcharge VZ9 (SCOP 6.2) [High-End]</option>
                     </select>
                 </div>
 
-                <!-- Electricity Input -->
-                <div class="space-y-1">
-                    <label for="price-electricity" class="text-xs text-slate-400 flex items-center gap-1">
-                        <i class="fa-solid fa-bolt text-sky-400"></i> Strompreis (€/kWh):
-                    </label>
-                    <input type="number" id="price-electricity" value="0.32" step="0.01" min="0.10" max="0.90" oninput="updateAll()" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:border-sky-500">
+                <!-- Electricity Input with +/- 0.01 € buttons -->
+                <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <label for="price-electricity" class="text-slate-300 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-sky-400"></i> Strompreis (€/kWh):
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changeElectricityPrice(-0.01)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-0,01</button>
+                        <input type="number" id="price-electricity" value="0.35" step="0.01" min="0.05" max="1.50" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-sky-500">
+                        <button onclick="changeElectricityPrice(0.01)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+0,01</button>
+                    </div>
                 </div>
 
-                <!-- Pellets Price & Custom Efficiency -->
+                <!-- Heating Oil (Heizöl) Input with +/- 0.05 € buttons & Custom Efficiency -->
+                <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <label for="price-oil" class="text-slate-300 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-oil-well text-rose-400"></i> Heizöl (€/Liter):
+                        </label>
+                        <span class="text-rose-400 font-mono text-xs" id="oil-kwh-price-display">-- ct/kWh</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changeOilPrice(-0.05)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-0,05</button>
+                        <input type="number" id="price-oil" value="1.00" step="0.05" min="0.30" max="3.00" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-rose-500">
+                        <button onclick="changeOilPrice(0.05)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+0,05</button>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[11px] text-slate-400">
+                        <span>Wirkungsgrad Heizöl:</span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="changeEfficiency('oil', -5)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-</button>
+                            <span class="font-mono text-rose-400 w-10 text-center font-bold" id="oil-eta-display">70%</span>
+                            <button onclick="changeEfficiency('oil', 5)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pellets Price with +/- 10 € buttons & Custom Efficiency -->
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                     <div class="flex justify-between items-center text-xs">
                         <label for="price-pellets" class="text-slate-300 font-semibold flex items-center gap-1">
@@ -192,19 +221,23 @@
                         </label>
                         <span class="text-amber-400 font-mono text-xs" id="pellet-kwh-price-display">-- ct/kWh</span>
                     </div>
-                    <input type="number" id="price-pellets" value="290" step="5" min="100" max="800" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-amber-500">
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changePelletPrice(-10)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-10€</button>
+                        <input type="number" id="price-pellets" value="320" step="10" min="50" max="1000" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-amber-500">
+                        <button onclick="changePelletPrice(10)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+10€</button>
+                    </div>
                     
                     <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[11px] text-slate-400">
                         <span>Wirkungsgrad Pellets:</span>
                         <div class="flex items-center gap-1.5">
                             <button onclick="changeEfficiency('pellet', -5)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-</button>
-                            <span class="font-mono text-amber-400 w-10 text-center font-bold" id="pellet-eta-display">75%</span>
+                            <span class="font-mono text-amber-400 w-10 text-center font-bold" id="pellet-eta-display">55%</span>
                             <button onclick="changeEfficiency('pellet', 5)" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Wood Price & Custom Efficiency -->
+                <!-- Spruce Wood Price with +/- 1 € buttons & Custom Efficiency -->
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                     <div class="flex justify-between items-center text-xs">
                         <label for="price-wood" class="text-slate-300 font-semibold flex items-center gap-1">
@@ -212,7 +245,11 @@
                         </label>
                         <span class="text-emerald-400 font-mono text-xs" id="wood-kwh-price-display">-- ct/kWh</span>
                     </div>
-                    <input type="number" id="price-wood" value="95" step="5" min="30" max="300" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-emerald-500">
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changeWoodPrice(-1)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">-1€</button>
+                        <input type="number" id="price-wood" value="85" step="1" min="20" max="400" oninput="updateAll()" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-emerald-500">
+                        <button onclick="changeWoodPrice(1)" class="w-10 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-xs active:scale-95 transition">+1€</button>
+                    </div>
                     
                     <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[11px] text-slate-400">
                         <span>Wirkungsgrad Fichte:</span>
@@ -227,7 +264,6 @@
             </div>
         </div>
 
-        <!-- Live Recommendation Banner -->
         <div id="recommendation-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
@@ -240,7 +276,7 @@
                             Split-Klimaanlage heizt am günstigsten!
                         </h3>
                         <p id="rec-subtitle" class="text-xs text-slate-400 mt-0.5">
-                            Kosten pro kWh Wärme: Klimaanlage <b>7.1 ct</b> vs. Pellets <b>7.9 ct</b> vs. Holz <b>9.7 ct</b>
+                            Kosten pro kWh Wärme
                         </p>
                     </div>
                 </div>
@@ -251,7 +287,6 @@
             </div>
         </div>
 
-        <!-- Chart Section -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
                 <div>
@@ -293,13 +328,46 @@
         let isManualMode = false;
         let costChart = null;
 
-        let pelletEfficiency = 75;
+        let pelletEfficiency = 55;
         let woodEfficiency = 75;
+        let oilEfficiency = 70;
 
         function onLocationChange() {
             currentLocKey = document.getElementById('location-select').value;
             document.getElementById('location-title-display').innerText = LOCATIONS[currentLocKey].name;
             fetchWeatherData();
+        }
+
+        function changeElectricityPrice(delta) {
+            const input = document.getElementById('price-electricity');
+            let val = (parseFloat(input.value) || 0.35) + delta;
+            val = Math.max(0.05, Math.min(1.50, parseFloat(val.toFixed(2))));
+            input.value = val.toFixed(2);
+            updateAll();
+        }
+
+        function changeOilPrice(delta) {
+            const input = document.getElementById('price-oil');
+            let val = (parseFloat(input.value) || 1.00) + delta;
+            val = Math.max(0.30, Math.min(3.00, parseFloat(val.toFixed(2))));
+            input.value = val.toFixed(2);
+            updateAll();
+        }
+
+        function changePelletPrice(delta) {
+            const input = document.getElementById('price-pellets');
+            let val = (parseFloat(input.value) || 320) + delta;
+            val = Math.max(50, Math.min(1000, val));
+            input.value = val;
+            updateAll();
+        }
+
+        function changeWoodPrice(delta) {
+            const input = document.getElementById('price-wood');
+            let val = (parseFloat(input.value) || 85) + delta;
+            val = Math.max(20, Math.min(400, val));
+            input.value = val;
+            updateAll();
         }
 
         function changeEfficiency(type, delta) {
@@ -309,6 +377,9 @@
             } else if (type === 'wood') {
                 woodEfficiency = Math.max(40, Math.min(95, woodEfficiency + delta));
                 document.getElementById('wood-eta-display').innerText = `${woodEfficiency}%`;
+            } else if (type === 'oil') {
+                oilEfficiency = Math.max(40, Math.min(95, oilEfficiency + delta));
+                document.getElementById('oil-eta-display').innerText = `${oilEfficiency}%`;
             }
             updateAll();
         }
@@ -404,9 +475,14 @@
 
         function updateAll() {
             const model = document.getElementById('model-select').value;
-            const priceElec = parseFloat(document.getElementById('price-electricity').value) || 0.32;
-            const pricePelletsTon = parseFloat(document.getElementById('price-pellets').value) || 290;
-            const priceWoodSRM = parseFloat(document.getElementById('price-wood').value) || 95;
+            const priceElec = parseFloat(document.getElementById('price-electricity').value) || 0.35;
+            const priceOilLiter = parseFloat(document.getElementById('price-oil').value) || 1.00;
+            const pricePelletsTon = parseFloat(document.getElementById('price-pellets').value) || 320;
+            const priceWoodSRM = parseFloat(document.getElementById('price-wood').value) || 85;
+
+            // Heating Oil: 9.8 kWh/Liter * (eta / 100)
+            const oilUsefulKwh = 9.8 * (oilEfficiency / 100);
+            const oilCentPerKwh = (priceOilLiter * 100) / oilUsefulKwh;
 
             // Pellets: 4900 kWh/t * (eta / 100)
             const pelletUsefulKwh = 4900 * (pelletEfficiency / 100);
@@ -416,6 +492,7 @@
             const woodUsefulKwh = 1300 * (woodEfficiency / 100);
             const woodCentPerKwh = (priceWoodSRM * 100) / woodUsefulKwh;
 
+            document.getElementById('oil-kwh-price-display').innerText = `${oilCentPerKwh.toFixed(1)} ct/kWh`;
             document.getElementById('pellet-kwh-price-display').innerText = `${pelletCentPerKwh.toFixed(1)} ct/kWh`;
             document.getElementById('wood-kwh-price-display').innerText = `${woodCentPerKwh.toFixed(1)} ct/kWh`;
 
@@ -452,14 +529,21 @@
             const recSubtitle = document.getElementById('rec-subtitle');
             const recIconBox = document.getElementById('rec-icon-box');
 
-            recSubtitle.innerHTML = `Nutzwärmekosten: Klimaanlage <b>${heatPumpCentPerKwh.toFixed(1)} ct/kWh</b> | Pellets (${pelletEfficiency}%) <b>${pelletCentPerKwh.toFixed(1)} ct/kWh</b> | Fichte (${woodEfficiency}%) <b>${woodCentPerKwh.toFixed(1)} ct/kWh</b>`;
+            recSubtitle.innerHTML = `Nutzwärmekosten: Klima <b>${heatPumpCentPerKwh.toFixed(1)} ct</b> | Heizöl (${oilEfficiency}%) <b>${oilCentPerKwh.toFixed(1)} ct</b> | Pellets (${pelletEfficiency}%) <b>${pelletCentPerKwh.toFixed(1)} ct</b> | Fichte (${woodEfficiency}%) <b>${woodCentPerKwh.toFixed(1)} ct</b>`;
 
-            if (heatPumpCentPerKwh <= pelletCentPerKwh && heatPumpCentPerKwh <= woodCentPerKwh) {
+            const minFuelPrice = Math.min(oilCentPerKwh, pelletCentPerKwh, woodCentPerKwh);
+
+            if (heatPumpCentPerKwh <= minFuelPrice) {
                 recTitle.innerText = "Split-Klimaanlage ist aktuell der günstigste Wärmeerzeuger!";
                 recTitle.className = "text-lg md:text-xl font-extrabold text-emerald-400";
                 recIconBox.className = "w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0";
                 recIconBox.innerHTML = '<i class="fa-solid fa-fan"></i>';
-            } else if (pelletCentPerKwh <= heatPumpCentPerKwh && pelletCentPerKwh <= woodCentPerKwh) {
+            } else if (oilCentPerKwh === minFuelPrice) {
+                recTitle.innerText = "Heizöl ist aktuell günstiger als die Klimaanlage!";
+                recTitle.className = "text-lg md:text-xl font-extrabold text-rose-400";
+                recIconBox.className = "w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-2xl shrink-0";
+                recIconBox.innerHTML = '<i class="fa-solid fa-oil-well"></i>';
+            } else if (pelletCentPerKwh === minFuelPrice) {
                 recTitle.innerText = "Pelletheizung ist aktuell günstiger als die Klimaanlage!";
                 recTitle.className = "text-lg md:text-xl font-extrabold text-amber-400";
                 recIconBox.className = "w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl shrink-0";
@@ -473,6 +557,7 @@
 
             const temps = [-15, -12, -10, -7, -5, -2, 0, 2, 5, 7, 10, 12, 15];
             const hpCosts = [];
+            const oilCosts = temps.map(() => parseFloat(oilCentPerKwh.toFixed(2)));
             const pelletCosts = temps.map(() => parseFloat(pelletCentPerKwh.toFixed(2)));
             const woodCosts = temps.map(() => parseFloat(woodCentPerKwh.toFixed(2)));
 
@@ -483,8 +568,7 @@
                 const cost = (priceElec * 100) / cop;
                 hpCosts.push(parseFloat(cost.toFixed(2)));
 
-                const minCheaperFuel = Math.min(pelletCentPerKwh, woodCentPerKwh);
-                if (bivalenzTemp === null && cost <= minCheaperFuel) {
+                if (bivalenzTemp === null && cost <= minFuelPrice) {
                     bivalenzTemp = t;
                 }
             });
@@ -498,10 +582,10 @@
                 bivalenzBadge.className = "px-3 py-1 rounded-lg text-xs font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20 self-start sm:self-auto";
             }
 
-            renderChart(temps, hpCosts, pelletCosts, woodCosts);
+            renderChart(temps, hpCosts, oilCosts, pelletCosts, woodCosts);
         }
 
-        function renderChart(temps, hpCosts, pelletCosts, woodCosts) {
+        function renderChart(temps, hpCosts, oilCosts, pelletCosts, woodCosts) {
             const ctx = document.getElementById('costChart').getContext('2d');
             const labels = temps.map(t => `${t > 0 ? '+' : ''}${t} °C`);
 
@@ -539,10 +623,12 @@
             if (costChart) {
                 costChart.data.labels = labels;
                 costChart.data.datasets[0].data = hpCosts;
-                costChart.data.datasets[1].data = pelletCosts;
-                costChart.data.datasets[1].label = `Holzpellets (${pelletEfficiency}% Wirkungsgrad)`;
-                costChart.data.datasets[2].data = woodCosts;
-                costChart.data.datasets[2].label = `Brennholz Fichte (${woodEfficiency}% Wirkungsgrad)`;
+                costChart.data.datasets[1].data = oilCosts;
+                costChart.data.datasets[1].label = `Heizöl (${oilEfficiency}% Wirkungsgrad)`;
+                costChart.data.datasets[2].data = pelletCosts;
+                costChart.data.datasets[2].label = `Holzpellets (${pelletEfficiency}% Wirkungsgrad)`;
+                costChart.data.datasets[3].data = woodCosts;
+                costChart.data.datasets[3].label = `Brennholz Fichte (${woodEfficiency}% Wirkungsgrad)`;
                 
                 costChart.data.datasets[0].pointRadius = hpCosts.map((_, i) => i === closestIndex ? 8 : 4);
                 costChart.data.datasets[0].pointBackgroundColor = hpCosts.map((_, i) => i === closestIndex ? '#f43f5e' : '#38bdf8');
@@ -566,6 +652,16 @@
                                 pointRadius: hpCosts.map((_, i) => i === closestIndex ? 8 : 4),
                                 pointBackgroundColor: hpCosts.map((_, i) => i === closestIndex ? '#f43f5e' : '#38bdf8'),
                                 pointHoverRadius: 9
+                            },
+                            {
+                                label: `Heizöl (${oilEfficiency}% Wirkungsgrad)`,
+                                data: oilCosts,
+                                borderColor: '#fb7185',
+                                borderWidth: 2,
+                                borderDash: [4, 4],
+                                tension: 0,
+                                fill: false,
+                                pointRadius: 0
                             },
                             {
                                 label: `Holzpellets (${pelletEfficiency}% Wirkungsgrad)`,
