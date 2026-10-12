@@ -96,9 +96,14 @@
                         </select>
                     </div>
                 </div>
-                <div id="api-status-badge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span id="api-status-text">Wetterdaten werden geladen...</span>
+                <div class="flex flex-col md:items-end gap-2">
+                    <div id="api-status-badge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="api-status-text">Wetterdaten werden geladen...</span>
+                    </div>
+                    <button onclick="resetToDefaults()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700 transition flex items-center gap-1.5 self-start md:self-auto">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Einstellungen zurücksetzen
+                    </button>
                 </div>
             </div>
         </header>
@@ -189,7 +194,7 @@
                     </div>
                 </div>
 
-                <!-- Heating Oil (Heizöl) Input with +/- 0.05 € buttons & Custom Efficiency -->
+                <!-- Heating Oil Input -->
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                     <div class="flex justify-between items-center text-xs">
                         <label for="price-oil" class="text-slate-300 font-semibold flex items-center gap-1">
@@ -213,7 +218,7 @@
                     </div>
                 </div>
 
-                <!-- Pellets Price with +/- 10 € buttons & Custom Efficiency -->
+                <!-- Pellets Input -->
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                     <div class="flex justify-between items-center text-xs">
                         <label for="price-pellets" class="text-slate-300 font-semibold flex items-center gap-1">
@@ -237,7 +242,7 @@
                     </div>
                 </div>
 
-                <!-- Spruce Wood Price with +/- 1 € buttons & Custom Efficiency -->
+                <!-- Spruce Wood Input -->
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                     <div class="flex justify-between items-center text-xs">
                         <label for="price-wood" class="text-slate-300 font-semibold flex items-center gap-1">
@@ -322,19 +327,105 @@
             }
         };
 
-        let currentLocKey = 'rosswangen';
+        const DEFAULTS = {
+            location: 'rosswangen',
+            model: 'premium_a_plus',
+            priceElec: 0.35,
+            priceOil: 1.00,
+            pricePellets: 320,
+            priceWood: 85,
+            pelletEta: 55,
+            woodEta: 75,
+            oilEta: 70
+        };
+
+        let currentLocKey = DEFAULTS.location;
         let currentTemp = 7.0;
         let currentHumidity = 80;
         let isManualMode = false;
         let costChart = null;
 
-        let pelletEfficiency = 55;
-        let woodEfficiency = 75;
-        let oilEfficiency = 70;
+        let pelletEfficiency = DEFAULTS.pelletEta;
+        let woodEfficiency = DEFAULTS.woodEta;
+        let oilEfficiency = DEFAULTS.oilEta;
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                location: currentLocKey,
+                model: document.getElementById('model-select').value,
+                priceElec: parseFloat(document.getElementById('price-electricity').value) || DEFAULTS.priceElec,
+                priceOil: parseFloat(document.getElementById('price-oil').value) || DEFAULTS.priceOil,
+                pricePellets: parseFloat(document.getElementById('price-pellets').value) || DEFAULTS.pricePellets,
+                priceWood: parseFloat(document.getElementById('price-wood').value) || DEFAULTS.priceWood,
+                pelletEta: pelletEfficiency,
+                woodEta: woodEfficiency,
+                oilEta: oilEfficiency
+            };
+            try {
+                localStorage.setItem('cop_app_settings', JSON.stringify(settings));
+            } catch (e) {
+                console.warn("localStorage konnte nicht beschrieben werden:", e);
+            }
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('cop_app_settings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    currentLocKey = settings.location || DEFAULTS.location;
+                    document.getElementById('location-select').value = currentLocKey;
+                    
+                    document.getElementById('model-select').value = settings.model || DEFAULTS.model;
+                    document.getElementById('price-electricity').value = (settings.priceElec !== undefined ? settings.priceElec : DEFAULTS.priceElec).toFixed(2);
+                    document.getElementById('price-oil').value = (settings.priceOil !== undefined ? settings.priceOil : DEFAULTS.priceOil).toFixed(2);
+                    document.getElementById('price-pellets').value = settings.pricePellets !== undefined ? settings.pricePellets : DEFAULTS.pricePellets;
+                    document.getElementById('price-wood').value = settings.priceWood !== undefined ? settings.priceWood : DEFAULTS.priceWood;
+
+                    pelletEfficiency = settings.pelletEta !== undefined ? settings.pelletEta : DEFAULTS.pelletEta;
+                    woodEfficiency = settings.woodEta !== undefined ? settings.woodEta : DEFAULTS.woodEta;
+                    oilEfficiency = settings.oilEta !== undefined ? settings.oilEta : DEFAULTS.oilEta;
+
+                    document.getElementById('pellet-eta-display').innerText = `${pelletEfficiency}%`;
+                    document.getElementById('wood-eta-display').innerText = `${woodEfficiency}%`;
+                    document.getElementById('oil-eta-display').innerText = `${oilEfficiency}%`;
+                }
+            } catch (e) {
+                console.warn("Fehler beim Laden aus localStorage:", e);
+            }
+        }
+
+        function resetToDefaults() {
+            try {
+                localStorage.removeItem('cop_app_settings');
+            } catch (e) {}
+
+            currentLocKey = DEFAULTS.location;
+            document.getElementById('location-select').value = currentLocKey;
+            document.getElementById('model-select').value = DEFAULTS.model;
+            document.getElementById('price-electricity').value = DEFAULTS.priceElec.toFixed(2);
+            document.getElementById('price-oil').value = DEFAULTS.priceOil.toFixed(2);
+            document.getElementById('price-pellets').value = DEFAULTS.pricePellets;
+            document.getElementById('price-wood').value = DEFAULTS.priceWood;
+
+            pelletEfficiency = DEFAULTS.pelletEta;
+            woodEfficiency = DEFAULTS.woodEta;
+            oilEfficiency = DEFAULTS.oilEta;
+
+            document.getElementById('pellet-eta-display').innerText = `${pelletEfficiency}%`;
+            document.getElementById('wood-eta-display').innerText = `${woodEfficiency}%`;
+            document.getElementById('oil-eta-display').innerText = `${oilEfficiency}%`;
+
+            document.getElementById('location-title-display').innerText = LOCATIONS[currentLocKey].name;
+            fetchWeatherData();
+        }
 
         function onLocationChange() {
             currentLocKey = document.getElementById('location-select').value;
             document.getElementById('location-title-display').innerText = LOCATIONS[currentLocKey].name;
+            saveSettings();
             fetchWeatherData();
         }
 
@@ -474,6 +565,8 @@
         }
 
         function updateAll() {
+            saveSettings();
+
             const model = document.getElementById('model-select').value;
             const priceElec = parseFloat(document.getElementById('price-electricity').value) || 0.35;
             const priceOilLiter = parseFloat(document.getElementById('price-oil').value) || 1.00;
@@ -737,6 +830,8 @@
         }
 
         window.onload = function() {
+            loadSettings();
+            document.getElementById('location-title-display').innerText = LOCATIONS[currentLocKey].name;
             fetchWeatherData();
         };
     </script>
